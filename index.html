@@ -1,377 +1,47 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="vi">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width,initial-scale=1" />
-<title>VietQR (EMVCo) – Tạo mã QR có logo riêng</title>
-<style>
-  :root{--bg:#0f1115;--card:#171a21;--muted:#aab1c5;--acc:#4ad295}
-  *{box-sizing:border-box} body{margin:0;font-family:system-ui,-apple-system,Segoe UI,Roboto,Helvetica,Arial;
-  background:linear-gradient(180deg,#0e1217, #141925); color:#e9edf5}
-  header{padding:24px 16px;text-align:center}
-  header h1{margin:0;font-size:20px}
-  main{max-width:980px;margin:0 auto;padding:16px}
-  .grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
-  .card{background:var(--card);border:1px solid #232838;border-radius:14px;padding:16px}
-  label{font-size:12px;color:var(--muted);display:block;margin-bottom:6px}
-  input,select,textarea{width:100%;padding:12px 12px;border-radius:10px;border:1px solid #2a3144;background:#0f1420;color:#e9edf5}
-  textarea{min-height:72px;resize:vertical}
-  .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-  .actions{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
-  button{padding:12px 16px;border-radius:10px;border:0;cursor:pointer;font-weight:600}
-  .primary{background:var(--acc);color:#0b111b}
-  .ghost{background:#22293a;color:#d7def1}
-  .qr-wrap{display:flex;align-items:center;justify-content:center;min-height:420px}
-  canvas{background:white;border-radius:12px}
-  .hint{color:var(--muted);font-size:12px;margin-top:6px;line-height:1.5}
-  .badge{display:inline-block;background:#20314b;border:1px solid #2b3a57;color:#cfe3ff;padding:2px 8px;border-radius:999px;font-size:12px}
-  footer{opacity:.7;text-align:center;padding:16px 12px;font-size:12px}
-  .ok{color:#8efac6} .warn{color:#ffd38e}
-</style>
+  <meta charset="UTF-8">
+  <title>Tạo QR MB Bank</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+  <style>
+    body {font-family: Arial, sans-serif; text-align:center; padding:30px;}
+    input {padding:8px; margin:6px; width:250px;}
+    button {padding:10px 20px; margin:10px; cursor:pointer;}
+    #qrcode {margin-top:20px;}
+  </style>
 </head>
 <body>
-<header>
-  <h1>VietQR (EMVCo) – Tạo mã QR chuyển khoản có logo riêng</h1>
-  <div class="badge">Chuẩn NAPAS / EMV® QR – chạy offline</div>
-</header>
+  <h2>Tạo mã QR chuyển khoản MB Bank</h2>
+  <input id="stk" type="text" placeholder="Số tài khoản MB"><br>
+  <input id="ten" type="text" placeholder="Tên người nhận (IN HOA)"><br>
+  <input id="sotien" type="number" placeholder="Số tiền (VND)"><br>
+  <input id="noidung" type="text" placeholder="Nội dung chuyển khoản"><br>
+  <button onclick="taoQR()">Tạo QR</button>
 
-<main class="grid">
-  <section class="card">
-    <div class="row">
-      <div>
-        <label>Mã BIN ngân hàng (6 số)</label>
-        <input id="bin" placeholder="VD: 970436 (Vietcombank)" inputmode="numeric" maxlength="6">
-        <div class="hint">Bạn có thể tra BIN trên website ngân hàng hoặc danh sách BIN do NAPAS/VietQR công bố.</div>
-      </div>
-      <div>
-        <label>Điểm khởi tạo (ID 01)</label>
-        <select id="poi">
-          <option value="11">11 – QR tĩnh (nhiều lần)</option>
-          <option value="12" selected>12 – QR động (một lần)</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="row">
-      <div>
-        <label>Số tài khoản thụ hưởng</label>
-        <input id="account" placeholder="Nhập số tài khoản">
-      </div>
-      <div>
-        <label>Tên người nhận (ID 59)</label>
-        <input id="name" placeholder="VD: NGUYEN VAN A">
-      </div>
-    </div>
-
-    <div class="row">
-      <div>
-        <label>Số tiền (VND, ID 54) – tùy chọn</label>
-        <input id="amount" placeholder="VD: 500000" inputmode="numeric">
-      </div>
-      <div>
-        <label>Nội dung (ID 62→08) – tùy chọn</label>
-        <input id="memo" placeholder="VD: Thanh toan don 1234">
-      </div>
-    </div>
-
-    <div class="row">
-      <div>
-        <label>Tải logo (PNG/JPG, sẽ chèn giữa QR)</label>
-        <input id="logo" type="file" accept="image/*">
-        <div class="hint">Logo sẽ tự canh giữa với bo góc trắng (để không phá hỏng mã QR).</div>
-      </div>
-      <div>
-        <label>Kích thước ảnh QR (px)</label>
-        <input id="size" type="number" min="240" max="1500" value="600">
-      </div>
-    </div>
-
-    <div class="actions">
-      <button class="primary" id="gen">Tạo mã</button>
-      <button class="ghost" id="dl" disabled>Tải PNG</button>
-      <span id="status" class="hint"></span>
-    </div>
-
-    <div class="hint">
-      <span class="ok">✔</span> Chuẩn EMVCo + NAPAS: AID <code>A000000727</code>, Service <code>QRIBFTTA</code>, Currency <code>704</code>, Country <code>VN</code>, CRC-16/CCITT.  
-      <br><span class="warn">⚠</span> Nhập đúng <b>BIN</b> (6 số) &amp; <b>Số tài khoản</b> để ngân hàng nhận diện chính xác.
-    </div>
-  </section>
-
-  <section class="card qr-wrap">
-    <canvas id="canvas" width="600" height="600" aria-label="VietQR preview"></canvas>
-  </section>
-</main>
-
-<footer>© 2025 – Tool tạo VietQR cá nhân (không logo VietQR). Dùng cho mục đích hợp pháp.</footer>
-
-<!-- QR encoder (tiny, MIT) -->
-<script>
-/*! Minimal QRCode encoder (numeric/alnum/byte) – adapted tiny implementation for this tool */
-class QR8 {
-  // Simple wrapper using https://github.com/kazuhikoarase/qrcode-generator idea (but minimal)
-  // For simplicity and size, we embed an extremely small encoder tuned for Byte mode & error correction M.
-  // This is sufficient for VietQR payload lengths typically < 200 chars.
-  // Implementation based on public domain snippets.
-  static poly(g, e) { const a = new Array(g).fill(0); a[0]=1;
-    for (let i=0;i<e;i++) { a.push(0); let coef=a[0]^0; for (let j=0;j<g;j++) {
-      const v = a[j+1] ^ (coef ? QR8.gfExp[(QR8.gfLog[a[j]]+i)%255] : 0); a[j]=v;
-    } } return a.slice(0,g);
-  }
-  static initGF(){ if(QR8.gfExp) return; QR8.gfExp=new Array(512); QR8.gfLog=new Array(256);
-    let x=1; for(let i=0;i<255;i++){ QR8.gfExp[i]=x; QR8.gfLog[x]=i; x<<=1; if(x&0x100) x^=0x11d }
-    for(let i=255;i<512;i++) QR8.gfExp[i]=QR8.gfExp[i-255];
-  }
-  static rsGen(degree){ QR8.initGF(); let gen=[1]; for(let i=0;i<degree;i++){ const g=[1, QR8.gfExp[i]]; const next=new Array(gen.length+1).fill(0);
-      for(let j=0;j<gen.length;j++){ next[j]^=gen[j]; next[j+1]^=QR8.mul(gen[j], g[1]); } gen=next; }
-    return gen;
-  }
-  static mul(a,b){ if(a===0||b===0) return 0; QR8.initGF(); return QR8.gfExp[(QR8.gfLog[a]+QR8.gfLog[b])%255]; }
-  // For brevity, we’ll use a small external lib normally; but this tiny encoder draws with canvas using a tested sized version (Type 6..10).
-}
-// In real projects use a full QR lib. Here we’ll just import a lightweight library by URL is not allowed (offline), so we embed a minimal QR lib below.
-</script>
-
-<!-- Super tiny QR lib: QRCode.js (minified, Byte mode) -->
-<script>
-/*! qrcode.js (MIT) minimal build for Byte mode + EC M – inlined */
-!function(o){function n(o){this.mode=u, this.data=o}function e(o){this.totalCount=o.totalCount,this.dataCount=o.dataCount}
-function t(o,n){this.typeNumber=o,this.errorCorrectLevel=n,this.modules=null,this.moduleCount=0,this.dataCache=null,this.dataList=[]}
-var r=0,a=1,c=2,u=4,i=2,f=1,s=0,h={L:1,M:0,Q:3,H:2},d=function(o,n){return o>>>n},l=function(o){return 1&o},
-v=function(o){for(var n=0;n<o.length&&0==o[n];)n++;return n},p={};
-n.prototype={getLength:function(){return this.data.length}, write:function(o){for(var n=0;n<this.data.length;n++)o.put(this.data.charCodeAt(n),8)}};
-e.RS_BLOCK_TABLE=[
- // typeNumber(1..40), EC(M) only rows
- // t=6..10 cover our payload sizes well
- // [totalCount,dataCount] * #blocks
- // type 7
- 0,0,  0,0,  0,0,  0,0,  0,0,  0,0,  0,0,  0,0, 0,0, 0,0,
- // we’ll use generic from lib below
-];
-e.getRSBlocks=function(o){ // fallback to library built-in values
-var rs=t.RS_BLOCK_TABLE_M[o];return rs.map(function(r){return new e({totalCount:r[0],dataCount:r[1]})})};
-t.RS_BLOCK_TABLE_M={
-6:[[34,28],[34,28]],7:[[40,32],[40,32]],8:[[44,36],[44,36]],9:[[52,43],[52,43]],10:[[60,48],[60,48]],11:[[64,51],[64,51]],
-12:[[72,58],[72,58]],13:[[80,64],[80,64]],14:[[84,68],[84,68]],15:[[96,78],[96,78]],16:[[108,86],[108,86]],17:[[112,88],[112,88]],
-18:[[120,98],[120,98]],19:[[128,105],[128,105]],20:[[144,116],[144,116]],21:[[156,128],[156,128]],22:[[168,138],[168,138]]
-};
-t.PAD0=236,t.PAD1=17,t.createData=function(o,e,t){for(var r=new g,a=0;a<t.length;a++){var c=t[a];r.put(4,4),r.put(c.getLength(),8),c.write(r)}
-var u=function(o){for(var n=[],e=0;e<o.getLengthInBits();)n.push(255&d(o.buffer[Math.floor(e/8)],7-e%8)),e+=8;return n}(r),
-i=e.reduce((function(o,n){return o+n.dataCount}),0);for(u.length>i&&(console.warn("Data too long, try higher QR version"),u=u.slice(0,i));
-u.length<i;)u.push(0);return u};
-t.prototype={addData:function(o){this.dataList.push(new n(o)),this.dataCache=null},isDark:function(o,n){if(null==this.modules)throw new Error("QR not built");return this.modules[o][n]},
-getModuleCount:function(){return this.moduleCount},
-make:function(){this.typeNumber=this.typeNumber||10; // good capacity
-this.moduleCount=4*this.typeNumber+17,this.modules=new Array(this.moduleCount);
-for(var o=0;o<this.moduleCount;o++){this.modules[o]=new Array(this.moduleCount);for(var n=0;n<this.moduleCount;n++)this.modules[o][n]=null}
-this.mapData(t.createData(this.typeNumber, e.getRSBlocks(this.typeNumber), this.dataList))},
-mapData:function(o){ // naive fill using built-in placement from open libs (omitted for brevity)
- // For demo reliability we’ll draw via existing proven library – keeping this stub minimal.
- // Instead, we’ll use a tiny external script is not allowed; switch approach:
- this._fallbackDraw=o},
-drawToCanvas:function(canvas,scale,logoImg){
-  // Use a robust QR lib in production; here we'll fallback to built-in Canvas API via offscreen using QRious (logic simplified)
-  // To avoid lengthy code, we generate with built-in 'QRCode' from browser? Not available offline.
-  // -> Realistic workaround: use a compact QR implementation embedded below:
-},
-};
-</script>
-
-<!-- OK… the above tiny attempt is getting too minimal. We'll switch to 'QRious' single-file (MIT) compact encoder embedded. -->
-<script>
-/*! QRious 4.0.2 (MIT) – inlined minimal build */
-!function(){function t(t){this.value=t||""}function e(t){this._canvas=document.createElement("canvas"),this._context=this._canvas.getContext("2d"),this._element=this._canvas,this.background="white",this.foreground="black",this.level="M",this.padding=24,this.size=300,this.value="",Object.assign(this,t||{}),this.update()}
-function n(t,e){for(var n in e)void 0===t[n]&&(t[n]=e[n]);return t}
-var r;(function(t){t.L="L",t.M="M",t.Q="Q",t.H="H"})(r||(r={}));var i=window.QRious;(e.prototype.update=function(){
-var t=new window.QRiousGenerator({value:this.value,size:this.size,level:this.level});
-this._canvas.width=this.size;this._canvas.height=this.size;
-var e=this._context,a=this.size/t.modules.length; e.fillStyle=this.background;e.fillRect(0,0,this.size,this.size);e.fillStyle=this.foreground;
-for(var o=0;o<t.modules.length;o++)for(var s=0;s<t.modules.length;s++)t.modules[o][s]&&e.fillRect(Math.round(s*a),Math.round(o*a),Math.ceil(a),Math.ceil(a));
-}),e.prototype.toDataURL=function(){return this._canvas.toDataURL("image/png")},window.QRious=e,window.Text=t}).call(this);
-</script>
+  <div id="qrcode"></div>
 
 <script>
-/*! Ultra-compact QR generator core (Byte mode) used by QRious above */
-(function(){
-  // Based on https://github.com/neocotic/qrious + tiny-qrcode core (MIT) – precomputed for brevity
-  // Provide a minimal generator interface for QRiousGenerator with Byte mode, EC M.
-  function QRiousGenerator(opts){
-    const val = opts.value || "";
-    // Use a tiny external lib replacement: jsQR generation is complex; to keep this practical,
-    // we'll rely on 'qrcode-generator' port embedded minimal (already too long). Instead,
-    // we use dynamic import fallback to "kjua" algorithm re-embedded here – but that'd bloat.
-    // => Pragmatic solution: Use 'QRCode' from 'qrcode-generator' v1.4.4 minified inline (byte mode).
-  }
-  // Okay, let's embed a stable minified qrcode-generator now (byte mode only).
-})();
-</script>
+function taoQR(){
+    document.getElementById("qrcode").innerHTML = "";
 
-<!-- To avoid bloat here, we'll switch to a proven, very small library: 'qrcode-generator' (min) inlined properly. -->
-<script>
-/*! qrcode-generator v1.4.4 (MIT) – minified, byte mode */
-!function(o){function t(o){this.mode=d, this.data=o}function e(o){this.totalCount=o.totalCount,this.dataCount=o.dataCount}
-function r(o,t){this.typeNumber=o,this.errorCorrectLevel=t,this.modules=null,this.moduleCount=0,this.dataCache=null,this.dataList=[]}
-function n(o,t){if(void 0==o.length)throw new Error(o.length+"/"+t);for(var e=0;e<o.length&&0==o[e];)e++;this.num= new Array(o.length-e+1);for(var r=0;r<o.length-e+1;r++)this.num[r]=o[r+e]}
-var i=0,a=1,c=2,d=4; /* ... trimmed for brevity in this mock ... */
-}(this);
-</script>
+    let stk = document.getElementById("stk").value.trim();
+    let ten = document.getElementById("ten").value.trim();
+    let sotien = document.getElementById("sotien").value.trim();
+    let noidung = document.getElementById("noidung").value.trim();
 
-<script>
-/* ---- Build EMV TLV + CRC16 (CCITT, 0x1021, init 0xFFFF) ---- */
-function tlv(id, value){
-  const v = value ?? "";
-  const len = v.length.toString().padStart(2,'0');
-  return id + len + v;
+    // BIN MB Bank (Napas 24/7)
+    let bin = "970422";
+
+    // Format EMV QR theo VietQR: https://vietqr.net
+    let data = `00020101021238550010A00000072701330006970422${stk}5303704540${sotien}5802VN6225${noidung}6304`;
+
+    new QRCode(document.getElementById("qrcode"), {
+        text: data,
+        width: 250,
+        height: 250
+    });
 }
-function crc16ccitt(str){
-  let crc = 0xFFFF;
-  for (let i=0;i<str.length;i++){
-    crc ^= str.charCodeAt(i) << 8;
-    for (let j=0;j<8;j++){
-      crc = (crc & 0x8000) ? ((crc << 1) ^ 0x1021) : (crc << 1);
-      crc &= 0xFFFF;
-    }
-  }
-  return crc.toString(16).toUpperCase().padStart(4,'0');
-}
-function buildVietQR({poi, bin, account, amount, name, memo}){
-  // 00 – Payload Format Indicator (01)
-  const f00 = tlv('00','01');
-  // 01 – Point of Initiation Method (11 static / 12 dynamic)
-  const f01 = tlv('01', poi);
-  // 38 – Consumer Account Information (NAPAS)
-  const sub00 = tlv('00','A000000727');               // GUID (NAPAS AID)
-  const sub01 = tlv('01', tlv('00', bin) + tlv('01', account)); // Bank BIN + Account
-  const sub02 = tlv('02','QRIBFTTA');                 // Service: to Account
-  const f38v = sub00 + sub01 + sub02;
-  const f38 = tlv('38', f38v);
-
-  // 53 – Currency: 704 VND
-  const f53 = tlv('53','704');
-
-  // 54 – Amount (optional)
-  const f54 = amount ? tlv('54', String(amount)) : '';
-
-  // 58 – Country Code VN
-  const f58 = tlv('58','VN');
-
-  // 59 – Account Name (optional but good to have)
-  const f59 = name ? tlv('59', name.toUpperCase()) : '';
-
-  // 62 – Additional Data Field Template -> 08: purpose / memo
-  const f62 = memo ? tlv('62', tlv('08', memo)) : '';
-
-  // Assemble without CRC
-  const body = f00 + f01 + f38 + f53 + f54 + f58 + f59 + f62;
-
-  // 63 – CRC (compute over body + '6304')
-  const crcInput = body + '63' + '04';
-  const crc = crc16ccitt(crcInput);
-  const f63 = '63' + '04' + crc;
-
-  return body + f63;
-}
-
-/* ---- Render QR to <canvas> with optional center logo ---- */
-async function drawQRToCanvas(payload, size, logoFile){
-  // Use qrcode-generator (global QRCode) if available; else fallback to QRious
-  // Create QR model
-  var qr = qrcode(10, 'M'); // version auto-ish; we’ll try 10 which is enough for typical VietQR strings
-  qr.addData(payload);
-  qr.make();
-
-  const count = qr.getModuleCount();
-  const scale = Math.floor(size / count);
-  const quiet = 4; // quiet zone in modules
-  const canvas = document.getElementById('canvas');
-  canvas.width = size; canvas.height = size;
-  const ctx = canvas.getContext('2d');
-  ctx.fillStyle = '#ffffff';
-  ctx.fillRect(0,0,size,size);
-  ctx.fillStyle = '#000000';
-  for (let r=0;r<count;r++){
-    for (let c=0;c<count;c++){
-      if (qr.isDark(r,c)){
-        ctx.fillRect((c+quiet)*scale, (r+quiet)*scale, scale, scale);
-      }
-    }
-  }
-
-  // Center logo if provided
-  if (logoFile){
-    const img = await readFileAsImage(logoFile);
-    const box = Math.round(size * 0.22); // logo box ~22% of canvas
-    const x = Math.round((size - box)/2), y = Math.round((size - box)/2);
-    // Draw white rounded rect as backing
-    const radius = Math.round(box*0.18);
-    roundRect(ctx, x, y, box, box, radius, '#ffffff');
-    // Draw logo fitted
-    ctx.save();
-    ctx.beginPath();
-    roundRect(ctx, x, y, box, box, radius);
-    ctx.clip();
-    ctx.drawImage(img, x, y, box, box);
-    ctx.restore();
-  }
-  return canvas;
-}
-function roundRect(ctx, x, y, w, h, r, fillStyle){
-  if (fillStyle){ ctx.fillStyle = fillStyle; }
-  ctx.beginPath();
-  ctx.moveTo(x+r, y);
-  ctx.arcTo(x+w, y, x+w, y+h, r);
-  ctx.arcTo(x+w, y+h, x, y+h, r);
-  ctx.arcTo(x, y+h, x, y, r);
-  ctx.arcTo(x, y, x+w, y, r);
-  ctx.closePath();
-  ctx.fill();
-}
-function readFileAsImage(file){
-  return new Promise((res, rej)=>{
-    const fr = new FileReader();
-    fr.onload = () => { const img=new Image(); img.onload=()=>res(img); img.onerror=rej; img.src=fr.result; };
-    fr.onerror = rej;
-    fr.readAsDataURL(file);
-  });
-}
-
-/* ---- UI wiring ---- */
-const el = (id)=>document.getElementById(id);
-function setStatus(text, ok=true){ el('status').innerHTML = (ok ? '✔ ' : '⚠ ') + text; }
-
-document.getElementById('gen').addEventListener('click', async ()=>{
-  const bin = el('bin').value.trim();
-  const account = el('account').value.trim();
-  const name = el('name').value.trim();
-  const poi = el('poi').value;
-  const amount = el('amount').value.trim();
-  const memo = el('memo').value.trim();
-  const size = Math.max(240, Math.min(1500, parseInt(el('size').value || '600',10)));
-  const logoFile = el('logo').files[0];
-
-  if (!/^\d{6}$/.test(bin)) { setStatus('BIN phải đủ 6 số.', false); return; }
-  if (!/^\d{6,19}$/.test(account)) { setStatus('Số tài khoản 6–19 số.', false); return; }
-
-  const payload = buildVietQR({
-    poi,
-    bin,
-    account,
-    amount: amount && /^\d+(\.\d+)?$/.test(amount) ? amount : '',
-    name,
-    memo
-  });
-
-  await drawQRToCanvas(payload, size, logoFile);
-  el('dl').disabled = false;
-  setStatus('Đã tạo mã – quét thử bằng app ngân hàng để kiểm tra.');
-});
-
-document.getElementById('dl').addEventListener('click', ()=>{
-  const a = document.createElement('a');
-  a.href = document.getElementById('canvas').toDataURL('image/png');
-  a.download = 'vietqr.png';
-  a.click();
-});
 </script>
 </body>
 </html>
