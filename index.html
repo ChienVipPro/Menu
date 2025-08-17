@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
   <meta charset="UTF-8">
-  <title>Tạo QR MB Bank (chuẩn CRC)</title>
+  <title>QR MB Bank không logo</title>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
   <style>
     body {font-family: Arial, sans-serif; text-align:center; padding:30px;}
@@ -12,7 +12,7 @@
   </style>
 </head>
 <body>
-  <h2>Tạo mã QR chuyển khoản MB Bank</h2>
+  <h2>Tạo mã QR chuyển khoản MB Bank (thuần)</h2>
   <input id="stk" type="text" placeholder="Số tài khoản MB"><br>
   <input id="ten" type="text" placeholder="Tên người nhận (IN HOA)"><br>
   <input id="sotien" type="number" placeholder="Số tiền (VND)"><br>
@@ -24,7 +24,7 @@
 <script>
 function pad2(n){ return (n<10?'0':'')+n; }
 
-// Hàm CRC16-CCITT (XModem)
+// CRC16-CCITT (XModem)
 function crc16(str) {
   let crc = 0xFFFF;
   for (let c of str) {
@@ -46,38 +46,30 @@ function taoQR(){
   let sotien = document.getElementById("sotien").value.trim();
   let noidung = document.getElementById("noidung").value.trim();
 
-  // MB Bank BIN
-  let bin = "970422";
-
-  // Payload EMV
-  let payload = "";
-  payload += "000201";                   // ID 00: Phiên bản
-  payload += "010212";                   // ID 01: Loại QR = tĩnh/dộng
-  // Thông tin định danh ngân hàng + tài khoản
+  let bin = "970422"; // MB Bank BIN
   let accInfo = "0010A00000072701" + "33" + pad2((bin+stk).length) + bin + stk;
-  payload += "38" + pad2(accInfo.length) + accInfo;
-  // Loại tiền VND
-  payload += "5303704";
-  // Số tiền
+  let payload = "000201010212" +
+                "38" + pad2(accInfo.length) + accInfo +
+                "5303704";
+
   if(sotien){
-    let amt = sotien;
-    payload += "54" + pad2(amt.length) + amt;
+    payload += "54" + pad2(sotien.length) + sotien;
   }
-  // Quốc gia VN
+
   payload += "5802VN";
-  // Nội dung
+
   if(noidung){
     payload += "62" + pad2(noidung.length+2) + "08" + pad2(noidung.length) + noidung;
   }
-  // Thêm trường CRC, tính sau
+
   let toCRC = payload + "6304";
   let crc = crc16(toCRC);
   payload = toCRC + crc;
 
   new QRCode(document.getElementById("qrcode"), {
     text: payload,
-    width: 250,
-    height: 250
+    width: 300,
+    height: 300
   });
 }
 </script>
