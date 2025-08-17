@@ -2,249 +2,123 @@
 <html lang="vi">
 <head>
   <meta charset="utf-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>QR Chuyển khoản • Sepay API</title>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script>
-    // Tiny Tailwind-like tokens
-    const css = `
-      :root { --bg:#0b1020; --panel:#121a32; --muted:#8290b5; --text:#f7f9ff; --acc:#5eead4; }
-      *{box-sizing:border-box}
-      html,body{height:100%}
-      body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;background:linear-gradient(140deg,#0b1020,#0f1b3c 55%,#091932);color:var(--text)}
-      a{color:var(--acc)}
-      .wrap{max-width:1050px;margin:0 auto;padding:24px}
-      header{display:flex;gap:16px;align-items:center;justify-content:space-between;margin-bottom:18px}
-      .brand{display:flex;align-items:center;gap:12px}
-      .logo{width:40px;height:40px;border-radius:12px;background:radial-gradient(circle at 30% 30%,#7cf8e9,transparent 60%),linear-gradient(135deg,#1f3b8f,#3e65f3);box-shadow:0 10px 30px rgba(94,234,212,.25)}
-      .title{font-weight:700;letter-spacing:.2px}
-      .grid{display:grid;grid-template-columns:1.1fr .9fr;gap:18px}
-      @media (max-width:920px){.grid{grid-template-columns:1fr}}
-      .card{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02));backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.07);border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
-      .card .hd{padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:space-between}
-      .card .bd{padding:18px}
-      .muted{color:var(--muted);font-size:13px}
-      .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
-      @media (max-width:600px){.row{grid-template-columns:1fr}}
-      label{font-size:13px;color:#c8d3f3;margin-bottom:6px;display:block}
-      input,select,textarea{width:100%;padding:12px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:#0e1530;color:var(--text);outline:none}
-      input:focus,select:focus,textarea:focus{border-color:#8ddfd6;box-shadow:0 0 0 3px rgba(94,234,212,.2)}
-      .actions{display:flex;gap:10px;flex-wrap:wrap}
-      button,.btn{appearance:none;border:0;border-radius:12px;padding:11px 14px;background:#2a3a85;color:white;font-weight:600;cursor:pointer}
-      .btn.sec{background:#193357}
-      .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,.2)}
-      .url{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;background:#0a132b;border-radius:12px;padding:12px;overflow:auto;border:1px solid rgba(255,255,255,.12)}
-      .qrbox{display:flex;align-items:center;justify-content:center;padding:24px}
-      .qrbox img{width:100%;max-width:420px;aspect-ratio:1;border-radius:16px;background:#fff}
-      .help{font-size:12px;color:#9ab3ff}
-      .foot{margin-top:10px}
-      .banktip{display:flex;gap:6px;flex-wrap:wrap;}
-      .pill{font-size:12px;padding:6px 8px;background:#0e214a;border:1px solid rgba(255,255,255,.12);border-radius:999px;cursor:pointer}
-    `;
-    const style = document.createElement('style');
-    style.textContent = css; document.head.appendChild(style);
-  </script>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Tạo mã QR Chuyển khoản</title>
+  <style>
+    body {font-family: Arial, sans-serif; margin:0; padding:20px; background:#0b1020; color:#fff;}
+    .wrap {max-width: 800px; margin:auto;}
+    .card {background:#121a32; padding:20px; border-radius:12px; margin-bottom:20px;}
+    label {display:block; margin:10px 0 5px; font-size:14px;}
+    input, select {width:100%; padding:10px; border-radius:8px; border:1px solid #333; background:#0e1530; color:#fff;}
+    button {padding:10px 15px; border:none; border-radius:8px; cursor:pointer; font-weight:bold;}
+    .btn {background:#2a3a85; color:#fff;}
+    .btn.ghost {background:transparent; border:1px solid #555;}
+    .url {background:#0a132b; padding:10px; border-radius:8px; margin-top:10px; word-break:break-all;}
+    .qrbox {display:flex; justify-content:center; padding:20px;}
+  </style>
 </head>
 <body>
   <div class="wrap">
-    <header>
-      <div class="brand">
-        <div class="logo" aria-hidden="true"></div>
-        <div>
-          <div class="title">Tạo mã QR chuyển khoản</div>
-          <div class="muted">Dùng API: <code>https://qr.sepay.vn/img</code></div>
-        </div>
+    <h2>Tạo mã QR chuyển khoản</h2>
+    <div class="card">
+      <label>Số tài khoản</label>
+      <input id="acc" placeholder="VD: 0123456789">
+
+      <label>Ngân hàng</label>
+      <select id="bank">
+        <option value="">--Chọn ngân hàng--</option>
+        <option value="VCB">Vietcombank (VCB)</option>
+        <option value="TCB">Techcombank (TCB)</option>
+        <option value="MB">MB Bank (MB)</option>
+        <option value="ACB">ACB</option>
+        <option value="VIB">VIB</option>
+        <option value="BIDV">BIDV</option>
+        <option value="VPB">VPBank (VPB)</option>
+        <option value="TPB">TPBank (TPB)</option>
+        <option value="SCB">Sacombank (SCB)</option>
+        <option value="AGB">Agribank (AGB)</option>
+      </select>
+
+      <label>Số tiền (VND)</label>
+      <input id="amount" placeholder="VD: 500000">
+
+      <label>Nội dung</label>
+      <input id="des" placeholder="VD: Thanh toan don hang #1234">
+
+      <label>Kích thước QR (px)</label>
+      <input id="size" type="number" value="360" min="128" max="1024">
+
+      <div style="margin-top:15px;">
+        <button class="btn" onclick="copyUrl()">Sao chép URL</button>
+        <a id="openUrl" class="btn ghost" target="_blank">Mở tab mới</a>
+        <a id="saveImg" class="btn" download="qr.png">Tải ảnh</a>
       </div>
-      <a href="#" id="resetAll" class="btn ghost" title="Xóa nhanh dữ liệu">Xóa dữ liệu</a>
-    </header>
 
-    <div class="grid">
-      <!-- Form -->
-      <section class="card">
-        <div class="hd"><strong>Thông tin chuyển khoản</strong><span class="muted" id="autosaveNote">Tự lưu (local)</span></div>
-        <div class="bd">
-          <div class="row">
-            <div>
-              <label for="acc">Số tài khoản (acc)</label>
-              <input id="acc" inputmode="numeric" autocomplete="off" placeholder="VD: 0123456789" />
-            </div>
-            <div>
-              <label for="bank">Ngân hàng (bank code)</label>
-              <div class="row" style="grid-template-columns:2fr 1fr;gap:8px">
-                <input id="bank" placeholder="VD: VCB, TCB, MBB, ACB…" />
-                <select id="bankSelect" title="Chọn nhanh">
-                  <option value="">— Chọn nhanh —</option>
-                  <option value="VCB">Vietcombank (VCB)</option>
-                  <option value="TCB">Techcombank (TCB)</option>
-                  <option value="MBB">MB Bank (MBB)</option>
-                  <option value="ACB">ACB (ACB)</option>
-                  <option value="VIB">VIB (VIB)</option>
-                  <option value="BIDV">BIDV (BIDV)</option>
-                  <option value="VPB">VPBank (VPB)</option>
-                  <option value="TPB">TPBank (TPB)</option>
-                  <option value="SCB">Sacombank (SCB)</option>
-                  <option value="AGB">Agribank (AGB)</option>
-                </select>
-              </div>
-              <div class="help">* Mã ngân hàng là viết tắt. Nếu khác hệ thống, nhập tay theo hướng dẫn của API Sepay.</div>
-            </div>
-          </div>
-
-          <div class="row" style="margin-top:12px">
-            <div>
-              <label for="amount">Số tiền (amount) – VND</label>
-              <input id="amount" inputmode="numeric" placeholder="VD: 250000" />
-            </div>
-            <div>
-              <label for="des">Nội dung (des)</label>
-              <input id="des" maxlength="150" placeholder="VD: Thanh toan don #1234" />
-            </div>
-          </div>
-
-          <div style="margin-top:14px">
-            <label for="size">Kích thước hiển thị (px)</label>
-            <input id="size" type="number" min="128" max="1024" step="16" value="360" />
-          </div>
-
-          <div class="foot">
-            <div style="margin:10px 0 8px;display:flex;gap:8px;align-items:center">
-              <span class="muted">URL tạo QR</span>
-              <button class="btn sec" id="copyUrl">Sao chép</button>
-              <a class="btn" id="openUrl" target="_blank" rel="noopener">Mở tab mới</a>
-              <a class="btn ghost" id="saveImg" download="qr-sepay.png">Tải ảnh</a>
-            </div>
-            <div class="url" id="urlBox" aria-live="polite"></div>
-          </div>
-        </div>
-      </section>
-
-      <!-- Preview -->
-      <section class="card">
-        <div class="hd"><strong>Xem trước QR</strong><span class="muted">Cập nhật theo thời gian thực</span></div>
-        <div class="bd">
-          <div class="qrbox">
-            <img id="qrImg" alt="QR chuyển khoản" src="" />
-          </div>
-          <div class="help">Nếu ảnh không hiển thị, kiểm tra lại tham số hoặc thử mở URL trực tiếp.</div>
-          <div class="banktip" style="margin-top:10px">
-            <span class="muted">Gợi ý code nhanh:</span>
-            <span class="pill" data-bank="VCB">VCB</span>
-            <span class="pill" data-bank="TCB">TCB</span>
-            <span class="pill" data-bank="MBB">MBB</span>
-            <span class="pill" data-bank="ACB">ACB</span>
-            <span class="pill" data-bank="VIB">VIB</span>
-            <span class="pill" data-bank="BIDV">BIDV</span>
-            <span class="pill" data-bank="VPB">VPB</span>
-            <span class="pill" data-bank="TPB">TPB</span>
-            <span class="pill" data-bank="SCB">SCB</span>
-            <span class="pill" data-bank="AGB">AGB</span>
-          </div>
-        </div>
-      </section>
+      <div class="url" id="urlBox"></div>
     </div>
 
-    <footer style="margin-top:18px" class="muted">
-      Lưu ý: Trang này chỉ tạo link ảnh QR theo tham số <code>acc</code>, <code>bank</code>, <code>amount</code>, <code>des</code>. Vui lòng kiểm tra lại trước khi sử dụng thực tế.
-    </footer>
+    <div class="card">
+      <h3>Xem trước QR</h3>
+      <div class="qrbox">
+        <div id="qrcode"></div>
+      </div>
+    </div>
   </div>
 
+  <!-- QRCode.js -->
+  <script src="https://cdn.jsdelivr.net/npm/qrcodejs/qrcode.min.js"></script>
   <script>
-    const $ = (s) => document.querySelector(s);
-    const acc = $('#acc');
-    const bank = $('#bank');
-    const bankSelect = $('#bankSelect');
-    const amount = $('#amount');
-    const des = $('#des');
-    const size = $('#size');
-    const urlBox = $('#urlBox');
-    const qrImg = $('#qrImg');
-    const copyBtn = $('#copyUrl');
-    const openBtn = $('#openUrl');
-    const saveImg = $('#saveImg');
-    const resetAll = $('#resetAll');
+    const acc = document.getElementById("acc");
+    const bank = document.getElementById("bank");
+    const amount = document.getElementById("amount");
+    const des = document.getElementById("des");
+    const size = document.getElementById("size");
+    const urlBox = document.getElementById("urlBox");
+    const openUrl = document.getElementById("openUrl");
+    const saveImg = document.getElementById("saveImg");
 
-    // Restore saved values
-    const KEY = 'qrsepay.form.v1';
-    const saved = JSON.parse(localStorage.getItem(KEY) || '{}');
-    if (saved.acc) acc.value = saved.acc;
-    if (saved.bank) bank.value = saved.bank;
-    if (saved.amount) amount.value = saved.amount;
-    if (saved.des) des.value = saved.des;
-    if (saved.size) size.value = saved.size;
-
-    function numOnly(v){ return (v||'').replace(/[^0-9]/g,''); }
+    let qr;
 
     function buildUrl() {
-      const a = numOnly(acc.value.trim());
-      const b = bank.value.trim().toUpperCase();
-      const m = numOnly(amount.value.trim());
+      const a = acc.value.trim();
+      const b = bank.value.trim();
+      const m = amount.value.trim();
       const d = des.value.trim();
 
-      const params = new URLSearchParams();
-      if (a) params.set('acc', a);
-      if (b) params.set('bank', b);
-      if (m) params.set('amount', m);
-      if (d) params.set('des', d);
+      let params = [];
+      if (a) params.push("acc=" + encodeURIComponent(a));
+      if (b) params.push("bank=" + encodeURIComponent(b));
+      if (m) params.push("amount=" + encodeURIComponent(m));
+      if (d) params.push("des=" + encodeURIComponent(d));
 
-      const url = `https://qr.sepay.vn/img?${params.toString()}`;
-      return url;
+      return "https://qr.sepay.vn/img?" + params.join("&");
     }
 
-    function update() {
-      // Save
-      localStorage.setItem(KEY, JSON.stringify({
-        acc: acc.value, bank: bank.value, amount: amount.value, des: des.value, size: size.value
-      }));
-
+    function updateQR() {
       const url = buildUrl();
       urlBox.textContent = url;
-      qrImg.src = url; // show
-      // Controls using URL
-      openBtn.href = url;
-      saveImg.href = url; // download image from source URL directly
-      // Size control
-      const s = Math.max(128, Math.min(1024, parseInt(size.value || '360', 10)));
-      qrImg.style.maxWidth = s + 'px';
+      openUrl.href = url;
+      saveImg.href = url;
+
+      const s = parseInt(size.value) || 360;
+      document.getElementById("qrcode").innerHTML = "";
+      qr = new QRCode(document.getElementById("qrcode"), {
+        text: url,
+        width: s,
+        height: s,
+        correctLevel: QRCode.CorrectLevel.H
+      });
     }
 
-    ['input','change'].forEach(evt=>{
-      [acc,bank,amount,des,size].forEach(el => el.addEventListener(evt, update));
-      bankSelect.addEventListener(evt, e=>{ if(bankSelect.value){ bank.value = bankSelect.value; update(); }});
-    });
+    function copyUrl() {
+      navigator.clipboard.writeText(urlBox.textContent).then(() => {
+        alert("Đã sao chép URL!");
+      });
+    }
 
-    document.querySelectorAll('.pill').forEach(p=>{
-      p.addEventListener('click',()=>{ bank.value = p.dataset.bank; update(); });
-    });
+    [acc, bank, amount, des, size].forEach(el => el.addEventListener("input", updateQR));
 
-    copyBtn.addEventListener('click', async () => {
-      try { await navigator.clipboard.writeText(urlBox.textContent); copyBtn.textContent = 'Đã sao chép!'; setTimeout(()=>copyBtn.textContent='Sao chép',1200);} catch(e){ alert('Không thể sao chép.'); }
-    });
-
-    resetAll.addEventListener('click', (e)=>{
-      e.preventDefault();
-      localStorage.removeItem(KEY);
-      acc.value = bank.value = amount.value = des.value = '';
-      size.value = 360;
-      update();
-    });
-
-    // Basic validation hints
-    [acc, bank].forEach(el=>{
-      el.addEventListener('blur', ()=>{
-        if(!el.value.trim()){
-          el.style.borderColor = '#ff7a7a';
-          el.style.boxShadow = '0 0 0 3px rgba(255,122,122,.2)';
-        } else {
-          el.style.borderColor = '';
-          el.style.boxShadow = '';
-        }
-      })
-    })
-
-    // Init
-    update();
+    updateQR();
   </script>
 </body>
 </html>
