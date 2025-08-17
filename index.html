@@ -1,77 +1,250 @@
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-  <meta charset="UTF-8">
-  <title>QR MB Bank không logo</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
-  <style>
-    body {font-family: Arial, sans-serif; text-align:center; padding:30px;}
-    input {padding:8px; margin:6px; width:250px;}
-    button {padding:10px 20px; margin:10px; cursor:pointer;}
-    #qrcode {margin-top:20px;}
-  </style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>QR Chuyển khoản • Sepay API</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <script>
+    // Tiny Tailwind-like tokens
+    const css = `
+      :root { --bg:#0b1020; --panel:#121a32; --muted:#8290b5; --text:#f7f9ff; --acc:#5eead4; }
+      *{box-sizing:border-box}
+      html,body{height:100%}
+      body{margin:0;font-family:Inter,system-ui,-apple-system,Segoe UI,Roboto,Ubuntu,Arial,sans-serif;background:linear-gradient(140deg,#0b1020,#0f1b3c 55%,#091932);color:var(--text)}
+      a{color:var(--acc)}
+      .wrap{max-width:1050px;margin:0 auto;padding:24px}
+      header{display:flex;gap:16px;align-items:center;justify-content:space-between;margin-bottom:18px}
+      .brand{display:flex;align-items:center;gap:12px}
+      .logo{width:40px;height:40px;border-radius:12px;background:radial-gradient(circle at 30% 30%,#7cf8e9,transparent 60%),linear-gradient(135deg,#1f3b8f,#3e65f3);box-shadow:0 10px 30px rgba(94,234,212,.25)}
+      .title{font-weight:700;letter-spacing:.2px}
+      .grid{display:grid;grid-template-columns:1.1fr .9fr;gap:18px}
+      @media (max-width:920px){.grid{grid-template-columns:1fr}}
+      .card{background:linear-gradient(180deg,rgba(255,255,255,.06),rgba(255,255,255,.02));backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.07);border-radius:18px;box-shadow:0 10px 30px rgba(0,0,0,.25)}
+      .card .hd{padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.06);display:flex;align-items:center;justify-content:space-between}
+      .card .bd{padding:18px}
+      .muted{color:var(--muted);font-size:13px}
+      .row{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+      @media (max-width:600px){.row{grid-template-columns:1fr}}
+      label{font-size:13px;color:#c8d3f3;margin-bottom:6px;display:block}
+      input,select,textarea{width:100%;padding:12px 12px;border-radius:12px;border:1px solid rgba(255,255,255,.14);background:#0e1530;color:var(--text);outline:none}
+      input:focus,select:focus,textarea:focus{border-color:#8ddfd6;box-shadow:0 0 0 3px rgba(94,234,212,.2)}
+      .actions{display:flex;gap:10px;flex-wrap:wrap}
+      button,.btn{appearance:none;border:0;border-radius:12px;padding:11px 14px;background:#2a3a85;color:white;font-weight:600;cursor:pointer}
+      .btn.sec{background:#193357}
+      .btn.ghost{background:transparent;border:1px solid rgba(255,255,255,.2)}
+      .url{font-family:ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,"Liberation Mono","Courier New",monospace;background:#0a132b;border-radius:12px;padding:12px;overflow:auto;border:1px solid rgba(255,255,255,.12)}
+      .qrbox{display:flex;align-items:center;justify-content:center;padding:24px}
+      .qrbox img{width:100%;max-width:420px;aspect-ratio:1;border-radius:16px;background:#fff}
+      .help{font-size:12px;color:#9ab3ff}
+      .foot{margin-top:10px}
+      .banktip{display:flex;gap:6px;flex-wrap:wrap;}
+      .pill{font-size:12px;padding:6px 8px;background:#0e214a;border:1px solid rgba(255,255,255,.12);border-radius:999px;cursor:pointer}
+    `;
+    const style = document.createElement('style');
+    style.textContent = css; document.head.appendChild(style);
+  </script>
 </head>
 <body>
-  <h2>Tạo mã QR chuyển khoản MB Bank (thuần)</h2>
-  <input id="stk" type="text" placeholder="Số tài khoản MB"><br>
-  <input id="ten" type="text" placeholder="Tên người nhận (IN HOA)"><br>
-  <input id="sotien" type="number" placeholder="Số tiền (VND)"><br>
-  <input id="noidung" type="text" placeholder="Nội dung chuyển khoản"><br>
-  <button onclick="taoQR()">Tạo QR</button>
+  <div class="wrap">
+    <header>
+      <div class="brand">
+        <div class="logo" aria-hidden="true"></div>
+        <div>
+          <div class="title">Tạo mã QR chuyển khoản</div>
+          <div class="muted">Dùng API: <code>https://qr.sepay.vn/img</code></div>
+        </div>
+      </div>
+      <a href="#" id="resetAll" class="btn ghost" title="Xóa nhanh dữ liệu">Xóa dữ liệu</a>
+    </header>
 
-  <div id="qrcode"></div>
+    <div class="grid">
+      <!-- Form -->
+      <section class="card">
+        <div class="hd"><strong>Thông tin chuyển khoản</strong><span class="muted" id="autosaveNote">Tự lưu (local)</span></div>
+        <div class="bd">
+          <div class="row">
+            <div>
+              <label for="acc">Số tài khoản (acc)</label>
+              <input id="acc" inputmode="numeric" autocomplete="off" placeholder="VD: 0123456789" />
+            </div>
+            <div>
+              <label for="bank">Ngân hàng (bank code)</label>
+              <div class="row" style="grid-template-columns:2fr 1fr;gap:8px">
+                <input id="bank" placeholder="VD: VCB, TCB, MBB, ACB…" />
+                <select id="bankSelect" title="Chọn nhanh">
+                  <option value="">— Chọn nhanh —</option>
+                  <option value="VCB">Vietcombank (VCB)</option>
+                  <option value="TCB">Techcombank (TCB)</option>
+                  <option value="MBB">MB Bank (MBB)</option>
+                  <option value="ACB">ACB (ACB)</option>
+                  <option value="VIB">VIB (VIB)</option>
+                  <option value="BIDV">BIDV (BIDV)</option>
+                  <option value="VPB">VPBank (VPB)</option>
+                  <option value="TPB">TPBank (TPB)</option>
+                  <option value="SCB">Sacombank (SCB)</option>
+                  <option value="AGB">Agribank (AGB)</option>
+                </select>
+              </div>
+              <div class="help">* Mã ngân hàng là viết tắt. Nếu khác hệ thống, nhập tay theo hướng dẫn của API Sepay.</div>
+            </div>
+          </div>
 
-<script>
-function pad2(n){ return (n<10?'0':'')+n; }
+          <div class="row" style="margin-top:12px">
+            <div>
+              <label for="amount">Số tiền (amount) – VND</label>
+              <input id="amount" inputmode="numeric" placeholder="VD: 250000" />
+            </div>
+            <div>
+              <label for="des">Nội dung (des)</label>
+              <input id="des" maxlength="150" placeholder="VD: Thanh toan don #1234" />
+            </div>
+          </div>
 
-// CRC16-CCITT (XModem)
-function crc16(str) {
-  let crc = 0xFFFF;
-  for (let c of str) {
-    crc ^= c.charCodeAt(0) << 8;
-    for (let i=0;i<8;i++) {
-      if (crc & 0x8000) crc = (crc << 1) ^ 0x1021;
-      else crc <<= 1;
-      crc &= 0xFFFF;
+          <div style="margin-top:14px">
+            <label for="size">Kích thước hiển thị (px)</label>
+            <input id="size" type="number" min="128" max="1024" step="16" value="360" />
+          </div>
+
+          <div class="foot">
+            <div style="margin:10px 0 8px;display:flex;gap:8px;align-items:center">
+              <span class="muted">URL tạo QR</span>
+              <button class="btn sec" id="copyUrl">Sao chép</button>
+              <a class="btn" id="openUrl" target="_blank" rel="noopener">Mở tab mới</a>
+              <a class="btn ghost" id="saveImg" download="qr-sepay.png">Tải ảnh</a>
+            </div>
+            <div class="url" id="urlBox" aria-live="polite"></div>
+          </div>
+        </div>
+      </section>
+
+      <!-- Preview -->
+      <section class="card">
+        <div class="hd"><strong>Xem trước QR</strong><span class="muted">Cập nhật theo thời gian thực</span></div>
+        <div class="bd">
+          <div class="qrbox">
+            <img id="qrImg" alt="QR chuyển khoản" src="" />
+          </div>
+          <div class="help">Nếu ảnh không hiển thị, kiểm tra lại tham số hoặc thử mở URL trực tiếp.</div>
+          <div class="banktip" style="margin-top:10px">
+            <span class="muted">Gợi ý code nhanh:</span>
+            <span class="pill" data-bank="VCB">VCB</span>
+            <span class="pill" data-bank="TCB">TCB</span>
+            <span class="pill" data-bank="MBB">MBB</span>
+            <span class="pill" data-bank="ACB">ACB</span>
+            <span class="pill" data-bank="VIB">VIB</span>
+            <span class="pill" data-bank="BIDV">BIDV</span>
+            <span class="pill" data-bank="VPB">VPB</span>
+            <span class="pill" data-bank="TPB">TPB</span>
+            <span class="pill" data-bank="SCB">SCB</span>
+            <span class="pill" data-bank="AGB">AGB</span>
+          </div>
+        </div>
+      </section>
+    </div>
+
+    <footer style="margin-top:18px" class="muted">
+      Lưu ý: Trang này chỉ tạo link ảnh QR theo tham số <code>acc</code>, <code>bank</code>, <code>amount</code>, <code>des</code>. Vui lòng kiểm tra lại trước khi sử dụng thực tế.
+    </footer>
+  </div>
+
+  <script>
+    const $ = (s) => document.querySelector(s);
+    const acc = $('#acc');
+    const bank = $('#bank');
+    const bankSelect = $('#bankSelect');
+    const amount = $('#amount');
+    const des = $('#des');
+    const size = $('#size');
+    const urlBox = $('#urlBox');
+    const qrImg = $('#qrImg');
+    const copyBtn = $('#copyUrl');
+    const openBtn = $('#openUrl');
+    const saveImg = $('#saveImg');
+    const resetAll = $('#resetAll');
+
+    // Restore saved values
+    const KEY = 'qrsepay.form.v1';
+    const saved = JSON.parse(localStorage.getItem(KEY) || '{}');
+    if (saved.acc) acc.value = saved.acc;
+    if (saved.bank) bank.value = saved.bank;
+    if (saved.amount) amount.value = saved.amount;
+    if (saved.des) des.value = saved.des;
+    if (saved.size) size.value = saved.size;
+
+    function numOnly(v){ return (v||'').replace(/[^0-9]/g,''); }
+
+    function buildUrl() {
+      const a = numOnly(acc.value.trim());
+      const b = bank.value.trim().toUpperCase();
+      const m = numOnly(amount.value.trim());
+      const d = des.value.trim();
+
+      const params = new URLSearchParams();
+      if (a) params.set('acc', a);
+      if (b) params.set('bank', b);
+      if (m) params.set('amount', m);
+      if (d) params.set('des', d);
+
+      const url = `https://qr.sepay.vn/img?${params.toString()}`;
+      return url;
     }
-  }
-  return crc.toString(16).toUpperCase().padStart(4,'0');
-}
 
-function taoQR(){
-  document.getElementById("qrcode").innerHTML = "";
+    function update() {
+      // Save
+      localStorage.setItem(KEY, JSON.stringify({
+        acc: acc.value, bank: bank.value, amount: amount.value, des: des.value, size: size.value
+      }));
 
-  let stk = document.getElementById("stk").value.trim();
-  let ten = document.getElementById("ten").value.trim();
-  let sotien = document.getElementById("sotien").value.trim();
-  let noidung = document.getElementById("noidung").value.trim();
+      const url = buildUrl();
+      urlBox.textContent = url;
+      qrImg.src = url; // show
+      // Controls using URL
+      openBtn.href = url;
+      saveImg.href = url; // download image from source URL directly
+      // Size control
+      const s = Math.max(128, Math.min(1024, parseInt(size.value || '360', 10)));
+      qrImg.style.maxWidth = s + 'px';
+    }
 
-  let bin = "970422"; // MB Bank BIN
-  let accInfo = "0010A00000072701" + "33" + pad2((bin+stk).length) + bin + stk;
-  let payload = "000201010212" +
-                "38" + pad2(accInfo.length) + accInfo +
-                "5303704";
+    ['input','change'].forEach(evt=>{
+      [acc,bank,amount,des,size].forEach(el => el.addEventListener(evt, update));
+      bankSelect.addEventListener(evt, e=>{ if(bankSelect.value){ bank.value = bankSelect.value; update(); }});
+    });
 
-  if(sotien){
-    payload += "54" + pad2(sotien.length) + sotien;
-  }
+    document.querySelectorAll('.pill').forEach(p=>{
+      p.addEventListener('click',()=>{ bank.value = p.dataset.bank; update(); });
+    });
 
-  payload += "5802VN";
+    copyBtn.addEventListener('click', async () => {
+      try { await navigator.clipboard.writeText(urlBox.textContent); copyBtn.textContent = 'Đã sao chép!'; setTimeout(()=>copyBtn.textContent='Sao chép',1200);} catch(e){ alert('Không thể sao chép.'); }
+    });
 
-  if(noidung){
-    payload += "62" + pad2(noidung.length+2) + "08" + pad2(noidung.length) + noidung;
-  }
+    resetAll.addEventListener('click', (e)=>{
+      e.preventDefault();
+      localStorage.removeItem(KEY);
+      acc.value = bank.value = amount.value = des.value = '';
+      size.value = 360;
+      update();
+    });
 
-  let toCRC = payload + "6304";
-  let crc = crc16(toCRC);
-  payload = toCRC + crc;
+    // Basic validation hints
+    [acc, bank].forEach(el=>{
+      el.addEventListener('blur', ()=>{
+        if(!el.value.trim()){
+          el.style.borderColor = '#ff7a7a';
+          el.style.boxShadow = '0 0 0 3px rgba(255,122,122,.2)';
+        } else {
+          el.style.borderColor = '';
+          el.style.boxShadow = '';
+        }
+      })
+    })
 
-  new QRCode(document.getElementById("qrcode"), {
-    text: payload,
-    width: 300,
-    height: 300
-  });
-}
-</script>
+    // Init
+    update();
+  </script>
 </body>
 </html>
